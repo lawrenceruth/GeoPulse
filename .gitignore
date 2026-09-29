@@ -216,3 +216,31 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# GeoPulse project data
+data/raw/*
+data/processed/*
+
+# Keep data directories in the repository
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Environment variables and secrets
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Node / React dependencies
+node_modules/
+
+# Local IDE configuration
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
