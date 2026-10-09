@@ -96,3 +96,32 @@ GeoPulse/
 |   |-- data_loading/
 |   `-- spatial_processing/
 `-- tests/
+
+## Synthetic GPS Dataset
+
+The initial synthetic mobility dataset has been generated using Python.
+
+| Attribute | Details |
+|---|---|
+| GPS records | 10,000,000 |
+| Simulated device IDs | Up to 250,000 |
+| Simulation window | 7 days |
+| Study area | Defined coordinate bounds around Lagos, Nigeria |
+| Output format | Gzip-compressed CSV (`.csv.gz`) |
+| Random seed | 42 |
+| Generator | `src/data_generation/generate_gps_data.py` |
+| Output file | `data/raw/gps_pings.csv.gz` |
+
+### Data Generation Notes
+
+- GPS coordinates are generated around synthetic activity hubs within the defined study-area bounds.
+- Timestamp generation uses weighted hourly sampling to simulate variations in daily activity.
+- Each GPS ping is generated independently; continuous device trajectories are not yet modelled.
+- The dataset is synthetic and does not represent actual people, observed customer behaviour, or verified real-world points of interest.
+- The generated data file is excluded from Git using `.gitignore`. Run the generator locally to recreate the dataset.
+
+### Current Status
+
+**Completed:** Initial synthetic GPS data generation and record-count verification.
+
+**Next:** Snowflake ingestion, followed by distributed spatial processing and analytical modelling.
