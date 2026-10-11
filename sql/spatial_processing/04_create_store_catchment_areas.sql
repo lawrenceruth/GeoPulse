@@ -1,4 +1,5 @@
-﻿-- Create 500-metre buffer polygons around each synthetic store.
+﻿
+-- Create 500-metre buffer polygons around each synthetic store.
 CREATE OR REPLACE TABLE
   `careflow-process-mining-509421.geopulse_raw.store_catchment_areas`
 AS
