@@ -345,3 +345,232 @@ st.caption(
     "Metrics are calculated from the existing dbt store catchment summary "
     "in BigQuery. The displayed total adds store-level counts together."
 )
+
+
+st.divider()
+
+st.subheader("Hourly GPS Observation Patterns — Lekki")
+st.caption(
+    "Hourly synthetic GPS pings within the 500 m catchments of "
+    "GeoPulse Lekki A and GeoPulse Lekki B. Hours are shown in "
+    "West Africa Time (WAT, UTC+1). These observations do not "
+    "represent verified customer visits or purchases."
+)
+
+@st.cache_data(ttl=300)
+def load_hourly_lekki_data():
+    query = """
+    WITH lekki_pings AS (
+        SELECT
+            StoreID,
+            DeviceID,
+            Timestamp,
+            EXTRACT(
+                HOUR FROM DATETIME(Timestamp, 'Africa/Lagos')
+            ) AS hour_wat
+        FROM
+            `careflow-process-mining-509421.geopulse_raw.store_catchments`
+        WHERE StoreID IN ('STORE_001', 'STORE_002')
+    )
+    SELECT
+        hour_wat,
+        COUNTIF(StoreID = 'STORE_001') AS store_a_pings,
+        COUNTIF(StoreID = 'STORE_002') AS store_b_pings
+    FROM lekki_pings
+    GROUP BY hour_wat
+    ORDER BY hour_wat
+    """
+
+    client = bigquery.Client()
+    return client.query(query).to_dataframe()
+
+hourly = load_hourly_lekki_data()
+
+if not hourly.empty:
+    hourly = hourly.sort_values("hour_wat")
+
+    hourly_chart_data = hourly.melt(
+        id_vars="hour_wat",
+        value_vars=["store_a_pings", "store_b_pings"],
+        var_name="store",
+        value_name="gps_pings",
+    )
+
+    hourly_chart_data["store"] = hourly_chart_data["store"].map({
+        "store_a_pings": "GeoPulse Lekki A",
+        "store_b_pings": "GeoPulse Lekki B",
+    })
+
+    hourly_chart_data["hour_label"] = hourly_chart_data[
+        "hour_wat"
+    ].map(lambda hour: f"{int(hour):02d}:00")
+
+    fig_hourly = px.line(
+        hourly_chart_data,
+        x="hour_label",
+        y="gps_pings",
+        color="store",
+        markers=True,
+        title="Hourly GPS Pings by Lekki Store",
+        labels={
+            "hour_label": "Hour of Day (WAT)",
+            "gps_pings": "Synthetic GPS Pings",
+            "store": "Store",
+        },
+        category_orders={
+            "hour_label": [
+                f"{hour:02d}:00" for hour in range(24)
+            ],
+            "store": ["GeoPulse Lekki A", "GeoPulse Lekki B"],
+        },
+    )
+
+    fig_hourly.update_layout(
+        hovermode="x unified",
+        xaxis=dict(type="category"),
+        legend_title_text="Store",
+    )
+
+    st.plotly_chart(fig_hourly, use_container_width=True)
+
+    st.caption(
+        "Interpretation: compare the timing and relative volume of "
+        "synthetic observations across the two catchments. Similar "
+        "patterns alone do not establish customer switching or "
+        "actual sales cannibalization."
+    )
+else:
+    st.info("No hourly GPS observations are available for the two Lekki stores.")
+
+
+st.divider()
+
+st.subheader("Geographic Catchment Overlap — Lekki")
+st.caption(
+    "This analysis measures the geometric intersection between "
+    "the two simulated 500 m catchment polygons. It does not "
+    "measure actual customer switching or sales cannibalization."
+)
+
+@st.cache_data(ttl=300)
+def load_lekki_overlap():
+    query = """
+    WITH lekki_catchments AS (
+        SELECT
+            StoreID,
+            StoreName,
+            catchment_geometry
+        FROM
+            `careflow-process-mining-509421.geopulse_raw.store_catchment_areas`
+        WHERE StoreID IN ('STORE_001', 'STORE_002')
+    ),
+    store_a AS (
+        SELECT *
+        FROM lekki_catchments
+        WHERE StoreID = 'STORE_001'
+    ),
+    store_b AS (
+        SELECT *
+        FROM lekki_catchments
+        WHERE StoreID = 'STORE_002'
+    )
+    SELECT
+        a.StoreName AS store_a,
+        b.StoreName AS store_b,
+        ST_AREA(a.catchment_geometry) AS store_a_area_sqm,
+        ST_AREA(b.catchment_geometry) AS store_b_area_sqm,
+        ST_AREA(
+            ST_INTERSECTION(
+                a.catchment_geometry,
+                b.catchment_geometry
+            )
+        ) AS shared_area_sqm,
+        SAFE_DIVIDE(
+            ST_AREA(ST_INTERSECTION(
+                a.catchment_geometry,
+                b.catchment_geometry
+            )),
+            ST_AREA(a.catchment_geometry)
+        ) * 100 AS pct_store_a_area_overlapping,
+        SAFE_DIVIDE(
+            ST_AREA(ST_INTERSECTION(
+                a.catchment_geometry,
+                b.catchment_geometry
+            )),
+            ST_AREA(b.catchment_geometry)
+        ) * 100 AS pct_store_b_area_overlapping
+    FROM store_a AS a
+    CROSS JOIN store_b AS b
+    """
+
+    client = bigquery.Client()
+    return client.query(query).to_dataframe()
+
+
+overlap = load_lekki_overlap()
+
+if not overlap.empty:
+    result = overlap.iloc[0]
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Shared Geographic Area",
+        f"{result['shared_area_sqm']:,.0f} m²",
+    )
+
+    col2.metric(
+        "Store A Area Overlapping",
+        f"{result['pct_store_a_area_overlapping']:.2f}%",
+    )
+
+    col3.metric(
+        "Store B Area Overlapping",
+        f"{result['pct_store_b_area_overlapping']:.2f}%",
+    )
+
+    area_data = pd.DataFrame({
+        "Area Type": [
+            "Lekki A Catchment",
+            "Lekki B Catchment",
+            "Shared Area",
+        ],
+        "Area (m²)": [
+            result["store_a_area_sqm"],
+            result["store_b_area_sqm"],
+            result["shared_area_sqm"],
+        ],
+    })
+
+    fig_overlap = px.bar(
+        area_data,
+        x="Area Type",
+        y="Area (m²)",
+        color="Area Type",
+        text="Area (m²)",
+        title="Catchment Areas and Their Shared Geographic Area",
+    )
+
+    fig_overlap.update_traces(
+        texttemplate="%{text:,.0f}",
+        textposition="outside",
+    )
+
+    fig_overlap.update_layout(
+        showlegend=False,
+        yaxis_title="Area (square metres)",
+        xaxis_title="",
+    )
+
+    st.plotly_chart(fig_overlap, use_container_width=True)
+
+    st.caption(
+        "Interpretation: the shared area indicates how much the "
+        "two simulated geographic catchments intersect. It is a "
+        "spatial planning indicator, not evidence of lost revenue."
+    )
+else:
+    st.warning(
+        "No geographic overlap results were returned. "
+        "Check that both Lekki catchment polygons exist in BigQuery."
+    )
