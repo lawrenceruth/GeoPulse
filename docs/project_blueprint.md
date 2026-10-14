@@ -1,79 +1,74 @@
-# GeoPulse — Hyper-Local Retail Mobility Analytics
+# GeoPulse - Hyper-Local Retail Mobility Analytics
 
 ## 1. Project Overview
 
-GeoPulse is a geospatial retail analytics platform designed to help retailers evaluate potential store locations using dynamic mobility patterns rather than relying solely on static demographic or census data.
+GeoPulse is a geospatial retail analytics portfolio project designed to explore how simulated mobility patterns can support retail site-selection decisions.
 
-The project simulates anonymized mobile GPS activity across a city and processes the movement data through a scalable geospatial analytics pipeline.
+The project generates synthetic mobile GPS observations, processes them using Google BigQuery's geospatial capabilities, transforms catchment data through dbt, and presents analytical results in an interactive Streamlit dashboard.
 
-The final solution will combine geospatial data engineering, distributed spatial processing, analytical modeling, and interactive visualization to identify footfall patterns, store catchments, and potential cannibalization between retail locations.
+The current implementation focuses on store catchments, hourly observation patterns, geographic overlap, and shared device observations around simulated retail locations in Lagos, Nigeria.
 
----
+**Data limitation:** All GPS observations and store locations are synthetic. They do not represent verified real-world people, customer visits, purchases, or actual retail performance.
 
 ## 2. Domain
 
 **Retail Strategy & Geospatial Analytics**
 
----
-
 ## 3. Business Problem
 
-Retailers often rely heavily on static demographic and census information when evaluating new store locations.
+Retailers evaluating new locations need to understand how proposed stores might overlap with existing locations.
 
-Static data does not adequately describe how people actually move through a city throughout the day.
+Static demographic information alone may not capture differences in geographic coverage or the timing of observed mobility patterns.
 
-As a result, a retailer may select a location that appears attractive geographically but unintentionally captures customers who already visit an existing store.
+GeoPulse explores how synthetic location observations and geospatial analysis can help answer questions such as:
 
-GeoPulse addresses this problem by analyzing dynamic mobile-location patterns to understand:
+- How many GPS observations fall within each store's catchment?
+- How many distinct simulated devices appear within each catchment?
+- At what times do observations peak?
+- How much geographic area do two store catchments share?
+- How many simulated devices appear in multiple catchments?
+- Which locations may warrant further investigation before a real site-selection decision?
 
-- Where people move throughout the day
-- When foot traffic peaks
-- Which areas contribute visitors to existing stores
-- How store catchments overlap
-- How many visitors move between multiple stores
-- Where a proposed store may potentially cannibalize an existing location
-
----
+The results demonstrate analytical methods rather than establish real customer behaviour or financial cannibalization.
 
 ## 4. Case Study
 
-A real estate director for a coffee chain is evaluating a potential new store location.
+A fictional coffee-chain real estate team is evaluating store locations in Lagos.
 
-GeoPulse processes anonymized mobile GPS pings and maps movement patterns around existing and proposed store locations.
+GeoPulse analyses synthetic GPS observations around five simulated store locations. Each location has a 500-metre catchment used to identify nearby observations.
 
-The system identifies morning and evening mobility patterns and calculates overlapping store catchments.
+The analysis compares catchment activity, hourly observation patterns, shared device IDs, and geographic overlap. These measures can help demonstrate how a retailer might investigate potential location conflicts.
 
-The resulting analysis can reveal that a proposed location may intercept a significant proportion of traffic currently associated with an existing store.
+The results are exploratory. Shared device observations and overlapping catchments do not prove that customers switch stores, that sales are lost, or that a new location would cannibalize an existing store.
 
-The real estate director can then use the mobility analysis as one input when evaluating alternative locations.
+## 5. Implemented Architecture
 
----
+The current pipeline is:
 
-## 5. Core Technical Architecture
+Synthetic GPS Data Generation
+->->
+BigQuery Raw GPS and Store Location Tables
+->->
+BigQuery GEOGRAPHY and Spatial Processing
+->->
+500-Metre Store Catchment Analysis
+->->
+dbt Staging and Catchment Summary Models
+->->
+Hourly Observation and Geographic Overlap Analysis
+->->
+Streamlit Dashboard with Folium and Plotly
 
-The planned GeoPulse pipeline is:
+### Implemented Components
 
-Mobile GPS Data
-        ↓
-Synthetic Data Generation
-        ↓
-Snowflake Geospatial Data Lake
-        ↓
-Apache Sedona / PySpark
-        ↓
-500 m Store Catchment Analysis
-        ↓
-dbt ELT & Analytical Models
-        ↓
-Footfall & Cannibalization Metrics
-        ↓
-Kepler.gl / React
-        ↓
-Interactive Mobility Dashboard
+- **Data generation:** Python scripts generate synthetic GPS observations.
+- **Data platform:** Google BigQuery stores the raw data and spatially processed tables.
+- **Spatial processing:** BigQuery geospatial SQL creates store catchments and matches GPS observations to them.
+- **Analytical modelling:** dbt stages catchment data and produces store-level summary metrics.
+- **Additional analysis:** SQL calculates hourly observation patterns, shared-device measures, and geographic catchment overlap.
+- **Visualization:** Streamlit provides interactive filters, map layers, KPI cards, tables, and charts.
 
-Apache Airflow will be introduced as the orchestration layer for scheduled pipeline execution.
-
----
+The dbt project is maintained in the `geopulse/` directory.
 
 ## 6. Technology Stack
 
@@ -83,151 +78,153 @@ Apache Airflow will be introduced as the orchestration layer for scheduled pipel
 - NumPy
 
 ### Data Platform
-- Snowflake
-- Snowflake GEOGRAPHY data type
+- Google BigQuery
+- BigQuery GEOGRAPHY data type
+- Google Cloud authentication
 
-### Distributed Spatial Processing
-- Apache Spark
-- PySpark
-- Apache Sedona
+### Spatial Processing
+- BigQuery geospatial SQL
+- `ST_GEOGPOINT`
+- `ST_DISTANCE`
+- `ST_BUFFER`
+- `ST_INTERSECTION`
+- `ST_AREA`
 
-### Data Transformation & Modeling
-- dbt
+### Data Transformation and Modelling
 - SQL
+- dbt
 
-### Geospatial Visualization
-- Kepler.gl
-- React
-- H3
+### Visualization
+- Streamlit
+- Folium
+- Plotly
 
-### Orchestration
-- Apache Airflow
-
-### Development & Version Control
+### Development and Version Control
 - Git
 - GitHub
 
----
+Snowflake, Apache Spark, Apache Sedona, Kepler.gl, React, H3, and Apache Airflow are not part of the current implemented pipeline. They may be considered as future enhancements if they provide a clear benefit.
 
-## 7. Project Development Stages
+## 7. Development Stages
 
-### Stage 1 — Data Synthesis & Snowflake Loading
+### Stage 1 - Synthetic Data Generation
 
-Generate a large synthetic dataset of anonymized mobile GPS pings containing:
+Generate synthetic GPS observations containing:
 
 - DeviceID
 - Latitude
 - Longitude
 - Timestamp
 
-The synthetic data should simulate realistic movement patterns across the selected city.
+The dataset is designed for portfolio-scale analysis. Generated records should remain clearly identified as synthetic, and large raw data files should not be committed to GitHub.
 
-The raw GPS data will then be loaded into Snowflake using appropriate GEOGRAPHY representations.
+### Stage 2 - BigQuery Spatial Processing
 
-### Stage 2 — Spatial Processing & ELT Modeling
+Load GPS observations and simulated store locations into BigQuery.
 
-Use Apache Sedona with PySpark to process the GPS dataset at scale.
+Create spatial representations of GPS points, generate 500-metre store catchments, and identify observations within those catchments using BigQuery geospatial SQL.
 
-Create 500-meter catchment areas around target store locations and determine which GPS pings fall within each catchment.
+### Stage 3 - Analytical Modelling
 
-The processing layer must be designed to handle millions of GPS points without exhausting available memory.
+Use dbt to transform catchment records into store-level summary metrics.
 
-dbt will then transform and aggregate the spatial results into analytical models including hourly footfall and unique visitor metrics.
+Analyse observation counts, distinct device IDs, average distances, hourly patterns, shared-device observations, and geographic overlap.
 
-### Stage 3 — Cannibalization Analysis & Mobility Interface
+### Stage 4 - Interactive Dashboard
 
-Develop SQL/dbt logic to identify devices visiting multiple store locations.
+Present the implemented analysis through Streamlit, Folium, and Plotly.
 
-Calculate store overlap and potential cannibalization metrics based on observed device movement between store catchments.
+Allow users to filter store locations and explore catchment activity, hourly observations, and geographic overlap.
 
-Build the initial Kepler.gl/React interface to visualize mobility patterns and analytical results.
+### Stage 5 - Future Enhancements
 
-### Stage 4 — Orchestration & Visualization Refinement
+Potential extensions include:
 
-Introduce Apache Airflow to orchestrate the major pipeline stages.
+- Automated pipeline orchestration
+- H3 hexagonal spatial aggregation
+- Additional temporal filters
+- More advanced map visualizations
+- Historical comparisons and scenario analysis
+- Distributed spatial processing where scale requirements justify it
+- Real retail sales or transaction data, if legitimately available and appropriately governed
 
-Refine the geospatial interface using H3 hexagonal indexing and 3D visualizations.
-
-Implement a 24-hour time slider to allow users to explore changes in mobility patterns throughout the day.
-
----
+These enhancements remain future work until implemented and tested.
 
 ## 8. Core Analytical Metrics
 
-The project will investigate metrics including:
+The current project includes or investigates the following measures:
 
-- Total GPS pings
-- Unique devices
-- Hourly footfall
-- Peak traffic hour
-- Store catchment visitors
-- Cross-store visitors
-- Store catchment overlap
-- Potential cannibalization rate
-- Morning traffic
-- Evening traffic
+- Total GPS observations
+- Distinct simulated devices
+- GPS observations within each store catchment
+- Average distance from matched observations to a store
+- Hourly observation counts
+- Shared device IDs across catchments
+- Geographic catchment overlap area
+- Catchment overlap percentage
 
-The exact metric definitions will be documented before implementation.
+### Interpretation Guidelines
 
----
+- **GPS observations** are generated location records, not confirmed visits.
+- **Distinct devices** are simulated identifiers, not verified individual customers.
+- **Hourly peaks** reflect the synthetic data-generation patterns.
+- **Shared devices** indicate that the same simulated identifier appears in multiple catchments; they do not establish customer switching.
+- **Geographic overlap** measures shared catchment area, not sales loss.
+- **Cannibalization** remains a business hypothesis requiring real-world validation and appropriate sales, customer, and location evidence.
 
-## 9. Data Integrity & Quality Requirements
+## 9. Data Quality and Integrity
 
-The pipeline should include checks for:
+Data preparation and analytical development should consider:
 
-- Duplicate records
-- Missing coordinates
-- Invalid coordinates
+- Missing or invalid coordinates
 - Invalid timestamps
-- Duplicate device-event combinations
+- Duplicate observations
 - Spatial join completeness
 - Store assignment consistency
-- Temporal ordering
-- dbt model compilation
-- Analytical aggregation accuracy
+- Correct distance calculations
+- Accurate aggregation of distinct devices
+- dbt model compilation and tests
+- Consistency between SQL results and dashboard metrics
 
-The project should verify that the resulting analytical models can distinguish expected morning and evening traffic patterns.
+Validation claims should be based on checks that have actually been executed.
 
----
+## 10. Scalability and Reproducibility
 
-## 10. Scalability Requirements
+The current implementation uses BigQuery for spatial processing and analytical queries.
 
-The spatial-processing pipeline should demonstrate the ability to process millions of GPS points without requiring the entire dataset to be loaded into a single in-memory operation.
+Future scalability work should evaluate query cost, partitioning, clustering, data volume, and processing requirements before introducing additional distributed-processing tools.
 
-The project should use distributed processing principles where appropriate.
-
-Large generated datasets should not be committed directly to GitHub.
-
----
+The repository should document required dependencies, cloud authentication, dataset names, model dependencies, and dashboard startup instructions. Large generated datasets and secrets must remain outside version control.
 
 ## 11. Portfolio Objective
 
-GeoPulse is intended to demonstrate practical capability in:
+GeoPulse demonstrates practical work in:
 
-- Geospatial analytics
-- Data engineering
-- Distributed data processing
-- Spatial databases
+- Synthetic data generation
 - SQL analytics
-- dbt modeling
+- Geospatial data processing
+- BigQuery
+- dbt modelling and testing
+- Interactive dashboard development
 - Data visualization
-- Workflow orchestration
+- Git and GitHub workflow
 - Business-oriented analytical storytelling
+- Responsible interpretation of synthetic data
 
-The final repository should be reproducible, clearly documented, and suitable for presentation as a professional data analytics portfolio project.
+The repository is intended to be clear, reproducible, and suitable for professional portfolio presentation.
 
----
+## 12. Development Principles
 
-## 12. Development Principle
+GeoPulse is developed incrementally.
 
-GeoPulse will be developed incrementally.
-
-Each major component should be:
+Each meaningful component should be:
 
 1. Implemented
 2. Tested
 3. Documented
-4. Committed to its appropriate Git branch
+4. Committed to the appropriate Git branch
 5. Reviewed before being merged into `main`
 
-The `main` branch should always represent the clean, portfolio-ready state of the project.
+The `main` branch should remain clean, tested, and presentation-ready.
+
+Documentation must reflect the actual state of the implementation. Planned technologies and unimplemented features must be labelled as future work rather than presented as completed capabilities.
