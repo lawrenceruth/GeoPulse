@@ -10,7 +10,7 @@ I built it around five store locations in Lagos (Lekki A, Lekki B, Victoria Isla
 
 *Interactive dashboard preview coming soon.*
 
-**Project resources:** [Live Dashboard — Coming Soon](#project-status) · [PDF Project Report — Coming Soon](#project-resources) · [Project Design Plan](docs/project_blueprint.md)
+**Project resources:** [Live Dashboard — Coming Soon](#project-status) · [PDF Project Report](docs/geopulse_project_report.pdf)(#project-resources) · [Project Design Plan](docs/project_blueprint.md)
 
 ## Data Sources
 
