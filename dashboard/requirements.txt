@@ -5,3 +5,5 @@ streamlit-folium
 plotly
 pandas
 google-cloud-bigquery
+h3
+pydeck
