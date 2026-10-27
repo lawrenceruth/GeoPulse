@@ -1,75 +1,68 @@
-# GeoPulse: Hyper-Local Retail Mobility Analytics
+# GeoPulse: Store Catchment & Mobility Analytics for Lagos
 
-GeoPulse is a geospatial analytics project that analyzes anonymized mobile GPS movement data to understand retail foot traffic, store catchments, and potential store cannibalization. It explores how simulated retail store locations can support catchment-area analysis and location-planning decisions.
+GeoPulse explores a practical retail question: **if two stores sit close together, how much of the same ground do they actually serve?**
 
-The project combines BigQuery geospatial SQL, dbt analytical modelling, and an interactive Streamlit dashboard to examine synthetic observation patterns around five simulated retail locations in Lagos, Nigeria.
+I built it around five store locations in Lagos (Lekki A, Lekki B, Victoria Island, Ikeja and Yaba) and about 10 million GPS pings. Each store gets a 500 m catchment. The pings that fall inside those catchments are matched to stores in BigQuery, summarised, and explored in a Streamlit dashboard with maps, hourly charts, H3 hexagons and a 3D view.
 
-> **Data integrity note:** All GPS observations and store locations are synthetic. They do not represent verified individuals, actual customer visits, purchases, or real-world sales cannibalization.
+## Dashboard Preview
 
-## Project Overview
+<!-- Add a short dashboard GIF here after recording it. -->
 
-GeoPulse demonstrates a reproducible analytical workflow for exploring:
+*Interactive dashboard preview coming soon.*
 
-- Synthetic GPS observations around simulated retail stores.
-- Store catchments defined by a 500-metre radius.
-- Matched GPS pings and distinct device counts.
-- Hourly patterns in synthetic GPS observations.
-- Geographic overlap between two Lekki catchment polygons.
-- Store-level comparisons through an interactive dashboard.
+**Project resources:** [Live Dashboard — Coming Soon](#project-status) · [PDF Project Report — Coming Soon](#project-resources) · [Project Design Plan](docs/project_blueprint.md)
 
-The project is designed to demonstrate data generation, geospatial SQL, analytical modelling, visualization, and Git-based project management.
+## Data Sources
 
-## Business Problem
+| Source | Rows | Notes |
+|---|---:|---|
+| Synthetic GPS pings | 10,000,000 | Simulated location observations; not actual customer visits |
+| Spatially enriched GPS pings | 10,000,000 | Ping records prepared for geospatial analysis |
+| `store_catchments` | 213,256 | Ping-to-store matches within the modelled 500 m catchments; a ping can match more than one store |
 
-Retail location-planning teams need ways to compare potential store locations and understand how their geographic catchments relate to one another.
+## What the dashboard shows
 
-GeoPulse uses a synthetic case study to explore questions such as:
+With the current data, the dashboard surfaces these findings:
 
-- How many GPS observations fall within each simulated store's catchment?
-- How do observation counts vary by hour?
-- How many distinct simulated device IDs are matched to each catchment?
-- How much geographic area do two catchment polygons share?
-- What additional analysis would be needed before making real retail investment decisions?
+Activity is concentrated. Victoria Island leads with 70,036 matched pings (32.8%), and the top three stores hold 88.3% of the 213,256 matched pings. Ikeja holds just 1.1%.
+The two Lekki stores are close to one market. Their catchments overlap by 81.6%, and 44,564 devices appear in both (84% of Lekki A's devices).
+The day has two peaks. Pings cluster around 08:00 and 18:00 WAT, and those two hours hold about 17% of all activity.
+Distance doesn't separate the stores. Average ping-to-store distance is 331 to 341 m everywhere, so volume and overlap tell the story.
+A few hexagons carry the load. At H3 resolution 9, 11 of 69 hexagons hold half of all matched pings.
 
-**Important limitation:** GPS observations within a catchment are not proof of store visits. Shared device IDs and overlapping polygons do not establish customer switching, purchases, lost revenue, or actual sales cannibalization.
+## Dashboard Screenshots
 
-## Project Architecture
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/executive-dashboard.png" alt="GeoPulse Executive Dashboard" width="100%"/></td>
+    <td width="50%"><img src="docs/images/spatial-mobility-map.png" alt="GeoPulse Spatial Mobility Map" width="100%"/></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/hourly-activity-patterns.png" alt="GeoPulse Hourly Activity Patterns" width="100%"/></td>
+    <td width="50%"><img src="docs/images/store-catchment-analysis.png" alt="GeoPulse Store and Catchment Analysis" width="100%"/></td>
+  </tr>
+</table>
 
-```text
-Synthetic GPS Data
-        |
-        v
-Python Data Generation
-        |
-        v
-BigQuery Geospatial Data
-        |
-        v
-Geospatial SQL Processing
-        |
-        +------------------------+
-        |                        |
-        v                        v
-Store Catchments          Catchment Polygons
-        |                        |
-        v                        v
-dbt Staging Model       Geographic Overlap SQL
-        |
-        v
-dbt Catchment Summary
-        |
-        v
-Streamlit Dashboard
-(Folium + Plotly)
-```
+## The pages
 
-### Implemented Pipeline
+| Page | What it's for |
+|---|---|
+| **Executive Dashboard** | Store ranking, headline KPIs and a short readout. Click a bar to focus the whole dashboard on one store. |
+| **Spatial Mobility Map Analysis** | Store markers that pulse with activity, 500 m catchments and ping-volume rings on a street map. |
+| **H3 Hexagon Density** | Matched pings grouped into H3 hexagons (resolution 8 or 9), with a "Zoom to" control and a check that hexagon totals match the store table. |
+| **3D Hexagon View** | The same hexagons as towers, with height set by ping count. Tilt, rotate and stretch them. |
+| **Hourly Activity Patterns** | Pings by hour of day, per store or combined, with peak hours marked. |
+| **Store and Catchment Analysis** | The Lekki overlap shown as an area-proportional diagram, plus how many devices the two stores share. |
+| **Final Candidate Recommendation** | An illustrative store score (ping volume against distance, with an adjustable weight), the hotspot hexagons to check first, and an action plan. |
+| **Contact the Author** | Links and contact details. |
 
-1. Synthetic GPS observations are generated using Python.
-2. GPS records, simulated store locations, and catchment geometries are stored in BigQuery.
-3. BigQuery geospatial SQL matches GPS observations to store catchments and calculates polygon overlap.
-4. dbt provides staging and catchment-summary models.
-5. Streamlit presents the map, KPIs, store comparison, hourly line chart, and geographic overlap visualization.
+## How it's built
+
+1. **Source data:** a simulated GPS ping file, store locations and 500 m catchment polygons, loaded into BigQuery (dataset in `africa-south1`).
+2. **Matching:** pings inside a store's catchment are stored in `store_catchments` with their distance to the store.
+3. **Summary table:** a mart table (`mart_store_catchment_summary`) holds pings, devices and average distance per store, and feeds the dashboard.
+4. **H3 assignment:** BigQuery has no H3 library in `africa-south1`, so the dashboard reads ping coordinates from BigQuery and assigns each ping's H3 cell with the Python `h3` package. Hexagon counts are checked against the store table on every load.
+5. **Dashboard:** Streamlit, with Folium for 2D maps, pydeck for the 3D view and Plotly for charts.
 
 ## Technology Stack
 
@@ -86,147 +79,58 @@ Streamlit Dashboard
 | Plotly | Interactive charts |
 | Git and GitHub | Version control and project collaboration |
 
-## Core Analytics
+## Run it locally
 
-### 1. Store Catchment Analysis
+You need Python, a Google Cloud project with the GeoPulse BigQuery tables, and Streamlit 1.50 or newer.
 
-Each simulated store has a 500-metre catchment. BigQuery spatial queries match GPS observations to these areas.
-
-Dashboard metrics include:
-
-- Matched GPS pings.
-- Distinct simulated device IDs.
-- Average distance from matched pings to a store.
-- Store-level observation comparisons.
-
-Counts across different store catchments may overlap. A device or GPS observation can be associated with more than one catchment, so store-level counts should not automatically be summed and interpreted as unique people or visits.
-
-### 2. Hourly GPS Observation Patterns
-
-An interactive line chart compares hourly synthetic GPS ping counts for GeoPulse Lekki A and GeoPulse Lekki B.
-
-- Time labels use West Africa Time (WAT, UTC+1).
-- The chart compares observation patterns across the two simulated catchments.
-- Similar hourly patterns do not demonstrate that customers switched between stores.
-
-### 3. Geographic Catchment Overlap
-
-BigQuery's geospatial functions calculate the intersection of the two Lekki catchment polygons.
-
-The analysis reports:
-
-- Area of each catchment.
-- Shared geographic area.
-- Percentage of each catchment covered by the shared area.
-
-The overlap percentage describes polygon geometry only. It is not a measure of customer overlap, sales loss, or cannibalization.
-
-### 4. Interactive Map
-
-The dashboard displays simulated store locations and their 500-metre catchment polygons. Users can filter stores to explore the map, KPI cards, comparison table, and store-level chart.
-
-### Key BigQuery Objects
-
-The project uses the following tables and views in Google Cloud project `careflow-process-mining-509421`. GeoPulse objects are kept in the `geopulse_raw`, `geopulse`, and related GeoPulse datasets; this project must not modify the separate CareFlow datasets.
-
-| Object | Purpose |
-|---|---|
-| `geopulse_raw.gps_pings` | Synthetic GPS observations |
-| `geopulse_raw.gps_pings_spatial` | GPS observations with BigQuery geography values |
-| `geopulse_raw.store_locations` | Simulated store locations |
-| `geopulse_raw.store_catchments` | GPS observations matched to store catchments |
-| `geopulse_raw.store_catchment_areas` | 500-metre catchment polygons |
-| `geopulse.stg_store_catchments` | dbt staging view |
-| `geopulse.mart_store_catchment_summary` | dbt store catchment summary |
-
-## Project Structure
-
-```text
-GeoPulse/
-├── dashboard/
-│   ├── app.py
-│   └── requirements.txt
-├── data/
-│   ├── raw/
-│   └── processed/
-├── dbt/
-├── docs/
-│   └── project_blueprint.md
-├── notebooks/
-├── sql/
-│   ├── spatial_processing/
-│   └── cannibalization_analysis/
-├── src/
-│   ├── data_generation/
-│   ├── data_loading/
-│   └── spatial_processing/
-└── tests/
-```
-
-The dbt project is maintained separately in the `geopulse/` directory. Generated data files, credentials, and local environment files should not be committed to Git.
-
-### Run the Dashboard Locally
-
-**Prerequisites**
-
-- Python 3.12 or a compatible Python version.
-- Access to the Google Cloud project and the GeoPulse BigQuery datasets.
-- Google Cloud authentication configured for the account with appropriate BigQuery permissions.
-
-**1. Clone the repository**
-
-```powershell
-git clone https://github.com/lawrenceruth/GeoPulse.git
-cd GeoPulse
-```
-
-**2. Create and activate a virtual environment**
-
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-If PowerShell blocks activation, use an approved environment activation method for your machine rather than changing system-wide execution policy unnecessarily.
-
-**3. Install dashboard dependencies**
-
-```powershell
-python -m pip install --upgrade pip
-pip install -r dashboard/requirements.txt
-```
-
-**4. Authenticate with Google Cloud**
-
-Install the Google Cloud CLI if needed, then authenticate using your own authorized Google account:
-
-```powershell
-gcloud auth login
+```bash
+py -m pip install streamlit pandas plotly folium streamlit-folium pydeck google-cloud-bigquery h3
 gcloud auth application-default login
-gcloud config set project careflow-process-mining-509421
+py -m streamlit run dashboard/app.py
 ```
 
-The authenticated account needs permission to query the required GeoPulse BigQuery tables. Never commit access tokens, service-account keys, or other credentials.
+Useful settings (all optional):
 
-**5. Launch Streamlit**
+| Setting | Purpose |
+|---|---|
+| `GEOPULSE_PROJECT_ID` | Your Google Cloud project ID |
+| `GEOPULSE_PING_TABLE` | Raw GPS table with ping coordinates, if automatic detection picks the wrong one |
 
-```powershell
-streamlit run dashboard/app.py
-```
+The full-dataset download in the sidebar expects the ping file at `data/raw/gps_pings.csv.gz`. A `.streamlit/config.toml` sets the theme and a minimal toolbar.
 
-Open the local URL printed by Streamlit, normally `http://localhost:8501`.
+## Status
 
-### Reproducibility and Data Limitations
+| Part | Status |
+|---|---|
+| BigQuery tables and the dashboard (all 8 pages) | Working |
+| H3 hexagons and 3D view | Working, matched to the store table |
+| Daily Airflow pipeline (load, transform, refresh the mart) | Drafted, not yet deployed or tested |
+| Automated tests | Not yet added |
 
-- Synthetic GPS data can be regenerated using the project's data-generation script and its documented configuration.
-- Large generated datasets are excluded from Git and must be generated locally or supplied through an authorized data source.
-- The dashboard queries BigQuery, so valid cloud authentication, dataset access, and the required tables must be available.
-- GPS pings are independently generated observations, not continuous device trajectories.
-- Simulated store coordinates and activity patterns are not verified real-world points of interest or observed customer behavior.
-- Catchment overlap is a geographic measure. Actual retail cannibalization would require additional validated evidence, such as observed store visits, transaction data, and a suitable causal or comparative analysis.
+## Limitations
 
-### Current Implementation Status
+- Pings are observations, not visitors. A ping inside both Lekki catchments counts once per store, as it does in the store table.
+- Catchments are fixed 500 m circles, a modelling choice and not a travel-time boundary.
+- Overlap is geometry. It does not show customers switching or sales being lost.
+- A hexagon's density shows pings, not footfall. Tower height is ping count and nothing else.
+- The candidate score uses only ping volume and distance. Because distances differ by about 9 m, distance is scored as neutral instead of inflating the gap.
+- A real site decision would need footfall counts, rents, demographics, access, competitors and actual sales.
 
-**Implemented:** Synthetic GPS data generation, BigQuery geospatial tables, 500-metre catchment analysis, dbt staging and summary models, hourly Lekki observation analysis, polygon overlap analysis, and the interactive Streamlit dashboard.
+## Project Resources
 
-**Potential future enhancements:** Automated data orchestration, additional spatial processing frameworks, more advanced trajectory analysis, and validated retail demand or sales modelling. These should be treated as future work until implemented and tested.
+- **Project Design Plan:** [Read the blueprint](docs/project_blueprint.md)
+- **PDF Project Report:** Coming soon
+- **Live Dashboard:** Not deployed yet
+
+## Next steps
+
+- Deploy and test the daily Airflow pipeline so the dashboard's "Data refreshed" time comes from real runs.
+- Add automated tests for the scoring, overlap and hexagon calculations.
+- Add data-quality checks to the load.
+- Swap in real business data when it is available.
+
+## Contact
+
+Lawrence Ruth: lawrenceruth34@gmail.com · [LinkedIn](https://www.linkedin.com/in/ruth-lawrence-8519073b7) · [GitHub](https://github.com/lawrenceruth)
+
+*GeoPulse is a portfolio project for learning and demonstration. Its results should not be read as commercial evidence.*
