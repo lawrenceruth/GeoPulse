@@ -1,0 +1,21 @@
+
+version: 2
+
+sources:
+  - name: geopulse_raw
+    database: careflow-process-mining-509421
+    schema: geopulse_raw
+    description: "Synthetic GeoPulse GPS and store spatial data in BigQuery."
+
+    tables:
+      - name: gps_pings_spatial
+        description: "Validated synthetic GPS pings with geography locations."
+
+      - name: store_locations
+        description: "Five synthetic GeoPulse store locations."
+
+      - name: store_catchments
+        description: "GPS pings matched to stores within 500 metres."
+
+      - name: store_catchment_areas
+        description: "500-metre buffer polygons around synthetic stores."

@@ -1,0 +1,25 @@
+
+version: 2
+
+models:
+  - name: mart_store_catchment_summary
+    description: "Store-level summary of synthetic GPS pings within 500-metre catchments."
+
+    columns:
+      - name: store_id
+        description: "Unique identifier for each synthetic store."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: store_name
+        data_tests:
+          - not_null
+
+      - name: matched_gps_pings
+        data_tests:
+          - not_null
+
+      - name: unique_devices
+        data_tests:
+          - not_null
