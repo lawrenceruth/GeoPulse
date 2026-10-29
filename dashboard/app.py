@@ -13,6 +13,8 @@ import os
 import re
 from pathlib import Path
 
+from google.oauth2 import service_account
+
 import folium
 import pandas as pd
 import plotly.express as px
@@ -158,10 +160,25 @@ st.markdown(CSS, unsafe_allow_html=True)
 # ----------------------------------------------------------------------------
 # Data access (client is cached; each query is cached)
 # ----------------------------------------------------------------------------
+
 @st.cache_resource
 def get_client() -> bigquery.Client:
-    return bigquery.Client(project=PROJECT_ID)
+    try:
+        service_account_info = st.secrets["gcp_service_account"]
+    except (FileNotFoundError, KeyError):
+        service_account_info = None
 
+    if service_account_info is not None:
+        credentials = service_account.Credentials.from_service_account_info(
+            dict(service_account_info)
+        )
+        return bigquery.Client(
+            project=PROJECT_ID,
+            credentials=credentials,
+        )
+
+    # Local development: use Google Cloud CLI credentials.
+    return bigquery.Client(project=PROJECT_ID)
 
 def query_df(sql: str, params=None) -> pd.DataFrame:
     cfg = bigquery.QueryJobConfig(query_parameters=params or [])
