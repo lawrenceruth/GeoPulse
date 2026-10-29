@@ -8,7 +8,7 @@ I built it around five store locations in Lagos (Lekki A, Lekki B, Victoria Isla
 
 ![GeoPulse dashboard preview](docs/images/geopulse_dashboard_preview.gif)
 
-**Project resources:** [Live Dashboard - Coming Soon](#project-status) | [PDF Project Report](docs/geopulse_project_report.pdf) | [Project Design Plan](docs/project_blueprint.md)
+**Project resources:** [Live Dashboard](https://geopulse-retail-analytics.streamlit.app/) | [PDF Project Report](docs/geopulse_project_report.pdf) | [Project Design Plan](docs/project_blueprint.md)
 
 ## Data Sources
 
@@ -118,7 +118,7 @@ The full-dataset download in the sidebar expects the ping file at `data/raw/gps_
 
 - **Project Design Plan:** [Read the blueprint](docs/project_blueprint.md)
 - **PDF Project Report:** [Read the report](docs/geopulse_project_report.pdf)
-- **Live Dashboard:** Not deployed yet
+- **Live Dashboard:** [Open the GeoPulse interactive dashboard](https://geopulse-retail-analytics.streamlit.app/)
 
 ## Next steps
 
