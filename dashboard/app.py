@@ -650,15 +650,19 @@ with st.sidebar:
                        help="Leave all stores selected to view the full network.")
         st.caption(f"{len(st.session_state['geopulse_selected_stores'])} of {len(store_options)} stores selected")
         with st.expander("Data & downloads"):
-            if not FULL_DATASET_PATH.is_file():
-                st.caption("Full GPS dataset file not found on this machine.")
-            else:
-                st.caption(f"Complete GPS dataset · {FULL_DATASET_PATH.stat().st_size / 1024 ** 2:,.0f} MB (compressed). "
-                           "Independent of the store filter.")
-                if st.toggle("Prepare full download", key="prep_full_download"):
-                    with FULL_DATASET_PATH.open("rb") as fh:
-                        st.download_button("Download gps_pings.csv.gz", data=fh, file_name="gps_pings.csv.gz",
-                                           mime="application/gzip", key="dl_full_dataset", width="stretch")
+            st.caption(
+                "Complete GPS dataset · 194.20 MB compressed · 10,000,000 records. "
+                "Independent of the store filter."
+            )
+
+            if st.toggle("Prepare full download", key="prep_full_download"):
+                st.link_button(
+                    "Download gps_pings.csv.gz",
+                    url="https://github.com/lawrenceruth/GeoPulse/releases/download/v1.0.0/gps_pings.csv.gz",
+                    help="Download the complete compressed GPS dataset from GitHub Releases.",
+                    width="stretch",
+                )
+
         st.divider()
     st.caption("GeoPulse • Research prototype")
 
